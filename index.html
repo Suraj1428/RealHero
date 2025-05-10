@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Cricket Scoring App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="font-sans bg-gray-100 min-h-screen">
+    <div class="container mx-auto p-4">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Simple Cricket Scoring App</h1>
+
+        <!-- Current Score -->
+        <div class="bg-white p-4 rounded-lg shadow-md mb-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-2">Current Score</h2>
+            <p id="currentScore" class="text-2xl font-bold text-gray-900">0/0</p>
+            <p id="currentOvers" class="text-lg text-gray-800">Overs: 0.0</p>
+        </div>
+
+        <!-- Ball Input -->
+        <div class="bg-white p-4 rounded-lg shadow-md mb-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-2">Ball Outcome</h2>
+            <div class="flex flex-wrap gap-2 mb-4">
+                <button onclick="addRun(0)" class="bg-gray-200 p-2 rounded hover:bg-gray-300">0</button>
+                <button onclick="addRun(1)" class="bg-gray-200 p-2 rounded hover:bg-gray-300">1</button>
+                <button onclick="addRun(2)" class="bg-gray-200 p-2 rounded hover:bg-gray-300">2</button>
+                <button onclick="addRun(3)" class="bg-gray-200 p-2 rounded hover:bg-gray-300">3</button>
+                <button onclick="addRun(4)" class="bg-gray-200 p-2 rounded hover:bg-gray-300">4</button>
+                <button onclick="addRun(6)" class="bg-gray-200 p-2 rounded hover:bg-gray-300">6</button>
+                <button onclick="addWicket()" class="bg-red-600 text-white p-2 rounded hover:bg-red-700">Wicket</button>
+            </div>
+            <div class="mt-4">
+                <label class="block text-sm font-medium text-gray-700">Runout + Runs</label>
+                <input id="runoutRuns" type="number" class="mt-1 p-2 w-20 border rounded" value="0" min="0">
+                <button onclick="addRunout()" class="bg-orange-600 text-white p-2 rounded hover:bg-orange-700">Runout + Runs</button>
+            </div>
+            <div class="mt-4">
+                <label class="block text-sm font-medium text-gray-700">Extras</label>
+                <select id="extraType" class="p-2 border rounded">
+                    <option value="none">None</option>
+                    <option value="wd">Wide (wd)</option>
+                    <option value="nb">No Ball (nb)</option>
+                </select>
+                <input id="extraRuns" type="number" class="mt-1 p-2 w-20 border rounded" value="0" min="0">
+                <button onclick="addExtra()" class="bg-green-600 text-white p-2 rounded hover:bg-green-700">Add Extra</button>
+            </div>
+        </div>
+
+        <!-- Edit Last Ball -->
+        <div class="bg-white p-4 rounded-lg shadow-md mb-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-2">Edit Last Ball</h2>
+            <p id="lastBall" class="text-gray-700 mb-2">Last Ball: None</p>
+            <div class="flex gap-2 items-center">
+                <select id="editBallOutcome" class="p-2 border rounded">
+                    <option value="none">Select Outcome</option>
+                    <option value="0">0</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="6">6</option>
+                    <option value="wicket">Wicket</option>
+                    <option value="runout">Runout + Runs</option>
+                    <option value="wd">Wide (wd)</option>
+                    <option value="nb">No Ball (nb)</option>
+                </select>
+                <input id="editExtraRuns" type="number" class="p-2 w-20 border rounded hidden" value="0" min="0" placeholder="Extra Runs">
+                <input id="editRunoutRuns" type="number" class="p-2 w-20 border rounded hidden" value="0" min="0" placeholder="Runout Runs">
+                <button onclick="editLastBall()" class="bg-blue-600 text-white p-2 rounded hover:bg-blue-700">Apply Edit</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let match = {
+            score: 0,
+            wickets: 0,
+            legalBalls: 0,
+            ballByBall: []
+        };
+
+        let lastBall = null; // Store the last ball's outcome
+
+        // Update the display
+        function updateDisplay() {
+            document.getElementById("currentScore").textContent = `${match.score}/${match.wickets}`;
+            const overs = Math.floor(match.legalBalls / 6) + (match.legalBalls % 6) / 10;
+            document.getElementById("currentOvers").textContent = `Overs: ${overs.toFixed(1)}`;
+            document.getElementById("lastBall").textContent = lastBall ? `Last Ball: ${lastBall.display}` : "Last Ball: None";
+        }
+
+        // Add runs for a ball
+        function addRun(runs) {
+            match.score += runs;
+            match.legalBalls++;
+            lastBall = { type: "run", value: runs, display: runs.toString() };
+            match.ballByBall.push(lastBall);
+            updateDisplay();
+        }
+
+        // Add a wicket
+        function addWicket() {
+            if (match.wickets < 10) {
+                match.wickets++;
+                match.legalBalls++;
+                lastBall = { type: "wicket", value: 0, display: "Wicket" };
+                match.ballByBall.push(lastBall);
+                updateDisplay();
+            }
+        }
+
+        // Add a runout with runs
+        function addRunout() {
+            const runs = parseInt(document.getElementById("runoutRuns").value) || 0;
+            match.score += runs;
+            match.wickets++;
+            match.legalBalls++;
+            lastBall = { type: "runout", value: runs, display: `Runout + ${runs}` };
+            match.ballByBall.push(lastBall);
+            updateDisplay();
+        }
+
+        // Add an extra (wide or no-ball)
+        function addExtra() {
+            const extraType = document.getElementById("extraType").value;
+            const extraRuns = parseInt(document.getElementById("extraRuns").value) || 0;
+            if (extraType === "none" || extraRuns < 0) return;
+
+            let totalRuns = extraRuns;
+            if (extraType === "wd") {
+                totalRuns += 1; // Add 1 run for wide by default
+            }
+            match.score += totalRuns;
+            // Wides and no-balls do not count as legal balls
+            lastBall = { type: extraType, value: totalRuns, display: `${extraType.toUpperCase()} + ${totalRuns}` };
+            match.ballByBall.push(lastBall);
+            updateDisplay();
+        }
+
+        // Edit the last ball
+        function editLastBall() {
+            if (!lastBall) return; // No ball to edit
+
+            const outcome = document.getElementById("editBallOutcome").value;
+            if (outcome === "none") return;
+
+            // Revert the previous ball's effect
+            if (lastBall.type === "run" || lastBall.type === "runout" || lastBall.type === "wd" || lastBall.type === "nb") {
+                match.score -= lastBall.value;
+            }
+            if (lastBall.type === "wicket" || lastBall.type === "runout") {
+                match.wickets--;
+            }
+            if (lastBall.type !== "wd" && lastBall.type !== "nb") {
+                match.legalBalls--; // Only revert legal balls for non-extras
+            }
+            match.ballByBall.pop(); // Remove the last ball
+
+            // Apply the new outcome
+            if (outcome === "wicket") {
+                match.wickets++;
+                match.legalBalls++;
+                lastBall = { type: "wicket", value: 0, display: "Wicket" };
+            } else if (outcome === "runout") {
+                const runs = parseInt(document.getElementById("editRunoutRuns").value) || 0;
+                match.score += runs;
+                match.wickets++;
+                match.legalBalls++;
+                lastBall = { type: "runout", value: runs, display: `Runout + ${runs}` };
+            } else if (outcome === "wd" || outcome === "nb") {
+                let extraRuns = parseInt(document.getElementById("editExtraRuns").value) || 0;
+                let totalRuns = extraRuns;
+                if (outcome === "wd") {
+                    totalRuns += 1; // Add 1 run for wide by default
+                }
+                match.score += totalRuns;
+                // Wides and no-balls do not count as legal balls
+                lastBall = { type: outcome, value: totalRuns, display: `${outcome.toUpperCase()} + ${totalRuns}` };
+            } else {
+                const runs = parseInt(outcome);
+                match.score += runs;
+                match.legalBalls++;
+                lastBall = { type: "run", value: runs, display: runs.toString() };
+            }
+            match.ballByBall.push(lastBall);
+            updateDisplay();
+        }
+
+        // Show/hide runout and extra runs inputs based on edit selection
+        document.getElementById("editBallOutcome").addEventListener("change", function () {
+            const runoutInput = document.getElementById("editRunoutRuns");
+            const extraInput = document.getElementById("editExtraRuns");
+            runoutInput.classList.toggle("hidden", this.value !== "runout");
+            extraInput.classList.toggle("hidden", !["wd", "nb"].includes(this.value));
+        });
+
+        // Initialize display
+        updateDisplay();
+    </script>
+</body>
+  </html>
